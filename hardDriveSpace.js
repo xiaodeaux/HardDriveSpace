@@ -1,6 +1,7 @@
 let fs = require('fs');
 
 let files = [];
+let fileObjects = [];
 let directories = [];
 let counter = 0;
 
@@ -18,13 +19,24 @@ function isDirectory(path) {
     } 
 }
 
+// get file size with statSync within a trycatch block
+function getFileSize(path) {
+    try {
+        let fileStats = fs.statSync('/' + path);
+        return fileStats.size;
+    } catch (error) {
+        return -1;
+    }
+}
+
+// take an array of file objects and return an array of file objects that are only the directories in that array
 function getDirectories(fileList) {
     // instantiate variable to store and return the list of directories
     let dirs = [];
     // loop through the files array to see if any of the files are a directory
     for (let i = 0; i < fileList.length; i++) {
-        console.log(fileList[i], isDirectory(fileList[i]))
-        if (isDirectory(fileList[i])) {
+        //console.log(fileList[i], isDirectory(fileList[i].path))
+        if (isDirectory(fileList[i].path)) {
             dirs.push(fileList[i]);
         }
     }
@@ -32,25 +44,47 @@ function getDirectories(fileList) {
     return dirs;
 }
 
-files = fs.readdirSync('/');
+// create a file object that has the file path and file size
+function createFileObject(path) {
+    return {
+        path: path,
+        size: getFileSize(path)
+    }
+}
+
+// get names of files from the root directory
+let initFiles = fs.readdirSync('/');
+// convert array of names to array of file objects
+files = initFiles.map(file => createFileObject(file));
 // concatenate the returned array from getDirectories to the directories array
 directories = directories.concat(getDirectories(files));
 
 do {
-    // get file names from the current directory index
-    console.log('\n' + directories[0])
-    let directoryFiles = fs.readdirSync('/' + directories.shift());
-    files = files.concat(directoryFiles);
-    console.log(directoryFiles + '\n')
+    // get name of current directory
+    let currentDirectory = directories.shift().path;
+    // get names of files in the current directory
+    let directoryFiles = fs.readdirSync('/' + currentDirectory);
+    // convert names to full paths of the files
+    directoryFiles = directoryFiles.map(file => currentDirectory + '/' + file)
+    // convert directoryFiles to file objects
+    directoryFiles = directoryFiles.map(file => createFileObject(file));
 
-    directories = directories.concat(getDirectories(directoryFiles));
+    // find the index of the current directory in the files array
+    let index = files.findIndex(file => file.path === currentDirectory);
+    files.splice(index + 1, 0, ...directoryFiles);
+    
+    // 
+
+    directories = getDirectories(directoryFiles).concat(directories);
     counter++
 
 } while (directories.length > 0 && counter < 5);
 
-// print the files from getFilesRecursively to the console
-console.log(files);
-console.log(directories);
+// create a human readable array of strings from the files array
+filesReadable = files.map(file => `${file.path} - ${file.size}`);
 
 // write files to a text file
-fs.writeFileSync('files.txt', files.join('\r'));
+fs.writeFileSync('files.txt', filesReadable.join('\r'));
+
+// save files to a json file
+fs.writeFileSync('files.json', JSON.stringify(files));
