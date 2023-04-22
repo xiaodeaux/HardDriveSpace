@@ -37,7 +37,7 @@ function getDirectories(fileList) {
     for (let i = 0; i < fileList.length; i++) {
         //console.log(fileList[i], isDirectory(fileList[i].path))
         if (isDirectory(fileList[i].path)) {
-            dirs.push(fileList[i]);
+            dirs.push(fileList[i].path);
         }
     }
 
@@ -52,16 +52,21 @@ function createFileObject(path) {
     }
 }
 
-// get names of files from the root directory
-let initFiles = fs.readdirSync('/');
-// convert array of names to array of file objects
-files = initFiles.map(file => createFileObject(file));
-// concatenate the returned array from getDirectories to the directories array
-directories = directories.concat(getDirectories(files));
+// if files.json exists, read the file and parse it into the files array, else initialize the files array with the root directory
+if (fs.existsSync('files.json')) {
+    ({ files, directories } = JSON.parse(fs.readFileSync('files.json')));
+} else {
+    // get names of files from the root directory
+    let initFiles = fs.readdirSync('/');
+    // convert array of names to array of file objects
+    files = initFiles.map(file => createFileObject(file));
+    // concatenate the returned array from getDirectories to the directories array
+    directories = directories.concat(getDirectories(files));
+}
 
 do {
     // get name of current directory
-    let currentDirectory = directories.shift().path;
+    let currentDirectory = directories.shift();
     // get names of files in the current directory
     let directoryFiles = fs.readdirSync('/' + currentDirectory);
     // convert names to full paths of the files
@@ -73,18 +78,24 @@ do {
     let index = files.findIndex(file => file.path === currentDirectory);
     files.splice(index + 1, 0, ...directoryFiles);
     
-    // 
-
+    // get the directories from the directoryFiles array and add them to the beginning of the directories array
     directories = getDirectories(directoryFiles).concat(directories);
-    counter++
+
+    // create a human readable array of strings from the files array
+    filesReadable = files.map(file => `${file.path}, ${file.size}`);
+
+    // write files to a text file
+    fs.writeFileSync('files.txt', filesReadable.join('\r'));
+
+    // create object that encapsulates the files and directories arrays
+    let saveState = {
+        files: files,
+        directories: directories
+    }
+
+    // save files to a json file
+    fs.writeFileSync('files.json', JSON.stringify(saveState));
+
+    counter++;
 
 } while (directories.length > 0 && counter < 5);
-
-// create a human readable array of strings from the files array
-filesReadable = files.map(file => `${file.path} - ${file.size}`);
-
-// write files to a text file
-fs.writeFileSync('files.txt', filesReadable.join('\r'));
-
-// save files to a json file
-fs.writeFileSync('files.json', JSON.stringify(files));
