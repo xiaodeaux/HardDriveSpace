@@ -98,4 +98,6 @@ do {
 
     counter++;
 
+    // blah blah
+
 } while (directories.length > 0 && counter < 5);
