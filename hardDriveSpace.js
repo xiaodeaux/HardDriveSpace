@@ -98,6 +98,9 @@ do {
 
     counter++;
 
-    // blah blah
+    // if counter is a multiple of , print directories length
+    if (counter % 50 === 0) {
+        console.log(directories.length);
+    }
 
-} while (directories.length > 0 && counter < 5);
+} while (directories.length > 0);
