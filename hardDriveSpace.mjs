@@ -1,14 +1,23 @@
-let fs = require('fs');
+import { statSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
+import { normalize, sep } from 'path';
 
 let files = [];
 let fileObjects = [];
 let directories = [];
 let counter = 0;
+let initFiles = [];
+
+// get command-line argument and assign the value to initPath
+let initPath = process.argv[2];
+console.log(initPath, process.argv[0], process.argv[1])
+
+// convert initPath to a cross-platform representation
+// let parsed_path = parse(initPath)
 
 // check if any of the files are a directory
 function isDirectory(path) {
     try {
-        let fileStats = fs.statSync('/' + path);
+        let fileStats = statSync('/' + path);
         if (fileStats.isDirectory()) {
             return true;
         } else {
@@ -22,7 +31,7 @@ function isDirectory(path) {
 // get file size with statSync within a trycatch block
 function getFileSize(path) {
     try {
-        let fileStats = fs.statSync('/' + path);
+        let fileStats = statSync('/' + path);
         return fileStats.size;
     } catch (error) {
         return -1;
@@ -53,24 +62,32 @@ function createFileObject(path) {
 }
 
 // if files.json exists, read the file and parse it into the files array, else initialize the files array with the root directory
-if (fs.existsSync('files.json')) {
-    ({ files, directories } = JSON.parse(fs.readFileSync('files.json')));
+if (existsSync('files.json')) {
+    ({ files, directories } = JSON.parse(readFileSync('files.json')));
 } else {
-    // get names of files from the root directory
-    let initFiles = fs.readdirSync('/');
+    // if initPath is not undefined use that value to initialize initFiles, else use the root directory
+    if (initPath) {
+        initFiles = readdirSync(initPath);
+    } else {
+        // get names of files from the root directory
+        initFiles = readdirSync('/');
+    }
     // convert array of names to array of file objects
     files = initFiles.map(file => createFileObject(file));
     // concatenate the returned array from getDirectories to the directories array
     directories = directories.concat(getDirectories(files));
 }
 
+
+
 do {
     // get name of current directory
     let currentDirectory = directories.shift();
+    console.log(currentDirectory)
     // get names of files in the current directory
-    let directoryFiles = fs.readdirSync('/' + currentDirectory);
+    let directoryFiles = readdirSync(normalize('..' + currentDirectory));
     // convert names to full paths of the files
-    directoryFiles = directoryFiles.map(file => currentDirectory + '/' + file)
+    directoryFiles = directoryFiles.map(file => currentDirectory + path.sep + file)
     // convert directoryFiles to file objects
     directoryFiles = directoryFiles.map(file => createFileObject(file));
 
@@ -82,10 +99,10 @@ do {
     directories = getDirectories(directoryFiles).concat(directories);
 
     // create a human readable array of strings from the files array
-    filesReadable = files.map(file => `${file.path}, ${file.size}`);
+    let filesReadable = files.map(file => `${file.path}, ${file.size}`);
 
     // write files to a text file
-    fs.writeFileSync('files.txt', filesReadable.join('\r'));
+    writeFileSync('files.txt', filesReadable.join('\r'));
 
     // create object that encapsulates the files and directories arrays
     let saveState = {
@@ -94,7 +111,7 @@ do {
     }
 
     // save files to a json file
-    fs.writeFileSync('files.json', JSON.stringify(saveState));
+    writeFileSync('files.json', JSON.stringify(saveState));
 
     counter++;
 
