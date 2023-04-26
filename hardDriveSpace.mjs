@@ -1,5 +1,6 @@
 import { statSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { normalize, sep } from 'path';
+import * as path from 'path';
 
 let files = [];
 let fileObjects = [];
@@ -62,16 +63,19 @@ function createFileObject(path) {
 }
 
 // if files.json exists, read the file and parse it into the files array, else initialize the files array with the root directory
-if (existsSync('files.json')) {
+if (existsSync('files.json') && process.argv[3] !== '--ignore') {
     ({ files, directories } = JSON.parse(readFileSync('files.json')));
 } else {
     // if initPath is not undefined use that value to initialize initFiles, else use the root directory
     if (initPath) {
         initFiles = readdirSync(initPath);
+        initFiles = initFiles.map(file => path.join(initPath, file));
     } else {
         // get names of files from the root directory
         initFiles = readdirSync('/');
+        initFiles = initFiles.map(file => normalize('..' + file));
     }
+
     // convert array of names to array of file objects
     files = initFiles.map(file => createFileObject(file));
     // concatenate the returned array from getDirectories to the directories array
@@ -81,22 +85,24 @@ if (existsSync('files.json')) {
 
 
 do {
-    // get name of current directory
-    let currentDirectory = directories.shift();
-    console.log(currentDirectory)
-    // get names of files in the current directory
-    let directoryFiles = readdirSync(normalize('..' + currentDirectory));
-    // convert names to full paths of the files
-    directoryFiles = directoryFiles.map(file => currentDirectory + path.sep + file)
-    // convert directoryFiles to file objects
-    directoryFiles = directoryFiles.map(file => createFileObject(file));
+    if (directories.length > 0) {
+        // get name of current directory
+        let currentDirectory = directories.shift();
+        console.log(currentDirectory)
+        // get names of files in the current directory
+        let directoryFiles = readdirSync(normalize('..' + sep + currentDirectory));
+        // convert names to full paths of the files
+        directoryFiles = directoryFiles.map(file => currentDirectory + sep + file)
+        // convert directoryFiles to file objects
+        directoryFiles = directoryFiles.map(file => createFileObject(file));
 
-    // find the index of the current directory in the files array
-    let index = files.findIndex(file => file.path === currentDirectory);
-    files.splice(index + 1, 0, ...directoryFiles);
-    
-    // get the directories from the directoryFiles array and add them to the beginning of the directories array
-    directories = getDirectories(directoryFiles).concat(directories);
+        // find the index of the current directory in the files array
+        let index = files.findIndex(file => file.path === currentDirectory);
+        files.splice(index + 1, 0, ...directoryFiles);
+        
+        // get the directories from the directoryFiles array and add them to the beginning of the directories array
+        directories = getDirectories(directoryFiles).concat(directories);
+    }
 
     // create a human readable array of strings from the files array
     let filesReadable = files.map(file => `${file.path}, ${file.size}`);
