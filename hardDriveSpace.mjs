@@ -1,6 +1,7 @@
-import { statSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
-import { normalize, sep } from 'path';
-import * as path from 'path';
+import { statSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { normalize, sep } from 'node:path';
+import * as path from 'node:path';
+import * as process from 'node:process';
 
 let files = [];
 let fileObjects = [];
@@ -18,7 +19,7 @@ console.log(initPath, process.argv[0], process.argv[1])
 // check if any of the files are a directory
 function isDirectory(path) {
     try {
-        let fileStats = statSync('/' + path);
+        let fileStats = Deno.statSync('/' + path);
         if (fileStats.isDirectory()) {
             return true;
         } else {
@@ -32,7 +33,7 @@ function isDirectory(path) {
 // get file size with statSync within a trycatch block
 function getFileSize(path) {
     try {
-        let fileStats = statSync('/' + path);
+        let fileStats = Deno.statSync('/' + path);
         return fileStats.size;
     } catch (error) {
         return -1;
