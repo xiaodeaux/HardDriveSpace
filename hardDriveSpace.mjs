@@ -33,9 +33,10 @@ function isDirectory(path) {
 // get file size with statSync within a trycatch block
 function getFileSize(path) {
     try {
-        let fileStats = Deno.statSync('/' + path);
+        let fileStats = Deno.statSync(path);
         return fileStats.size;
     } catch (error) {
+        console.log(error)
         return -1;
     }
 }
