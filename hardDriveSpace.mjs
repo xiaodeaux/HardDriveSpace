@@ -19,13 +19,10 @@ console.log(initPath, process.argv[0], process.argv[1])
 // check if any of the files are a directory
 function isDirectory(path) {
     try {
-        let fileStats = Deno.statSync('/' + path);
-        if (fileStats.isDirectory()) {
-            return true;
-        } else {
-            return false;
-        }
+        let fileStats = Deno.statSync(path);
+        return fileStats.isDirectory;
     } catch (error) {
+        console.log(error)
         return false;
     } 
 }
@@ -92,7 +89,7 @@ do {
         let currentDirectory = directories.shift();
         console.log(currentDirectory)
         // get names of files in the current directory
-        let directoryFiles = readdirSync(normalize('..' + sep + currentDirectory));
+        let directoryFiles = readdirSync(currentDirectory);
         // convert names to full paths of the files
         directoryFiles = directoryFiles.map(file => currentDirectory + sep + file)
         // convert directoryFiles to file objects
